@@ -1,7 +1,9 @@
 package main
 
 import (
+	"go_ws/internal/routers"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -12,5 +14,8 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	log.Println("PORT: ", os.Getenv("PORT"))
+	r := routers.Routers()
+
+	log.Println("Server listening port: ", os.Getenv("PORT"))
+	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), r))
 }
