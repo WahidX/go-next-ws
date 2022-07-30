@@ -8,17 +8,21 @@ import (
 )
 
 func PingHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("pong"))
+	w.Write([]byte("pong")) // nolint
 }
 
 func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
-	u := websocket.Upgrader{} // using default config
+	u := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
 
 	c, err := u.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("upgrade error: ", err)
 		return
 	}
+
+	log.Println("New Connection")
 
 	defer c.Close()
 
@@ -36,4 +40,6 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+
+	log.Println("Client Disconnected!")
 }
