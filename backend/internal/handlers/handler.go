@@ -11,35 +11,38 @@ func PingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("pong")) // nolint
 }
 
+// This is for testing websocket connection only
 func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	u := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 
-	c, err := u.Upgrade(w, r, nil)
+	conn, err := u.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("upgrade error: ", err)
 		return
 	}
+	defer func() {
+		err = conn.Close()
+		log.Println("Connection Close")
+	}()
 
 	log.Println("New Connection")
 
-	defer c.Close()
-
 	for {
-		mt, message, err := c.ReadMessage()
+		mt, message, err := conn.ReadMessage()
 		if err != nil {
 			log.Println("err in read:", err)
-			break
+			conn.Close()
+			return
 		}
 		log.Printf("recv: %s", message)
 
-		err = c.WriteMessage(mt, []byte("Message received: "+string(message)))
+		err = conn.WriteMessage(mt, []byte("From Server: client just said '"+string(message)+"'"))
 		if err != nil {
 			log.Println("err in write:", err)
-			break
+			conn.Close()
+			return
 		}
 	}
-
-	log.Println("Client Disconnected!")
 }

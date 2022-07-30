@@ -25,7 +25,7 @@ func Routers() http.Handler {
 	)
 
 	r.Get("/ping", handlers.PingHandler)
-	r.Get("/websocket", handlers.WebsocketHandler)
+	r.With(Authenticate).Get("/websocket", handlers.WebsocketHandler)
 
 	return r
 }
