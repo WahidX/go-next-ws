@@ -8,7 +8,10 @@ import (
 
 func Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authToken := r.Header.Get("Authorization")
+		// authToken := r.Header.Get("Authorization") 	// from browser we cannot send header in the default implementation:
+		// https://github.com/whatwg/websockets/issues/16#issuecomment-332065542
+
+		authToken := r.URL.Query().Get("auth")
 		if authToken == "" {
 			Send401Error(w)
 			return
