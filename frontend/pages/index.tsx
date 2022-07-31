@@ -1,55 +1,59 @@
 import type { NextPage } from "next";
-import { useCallback, useEffect, useState } from "react";
+import { StrictMode, useEffect, useState } from "react";
 
 const Home: NextPage = () => {
 	const [response, setResponse] = useState<string[]>([]);
 	const [message, setMessage] = useState<string>("");
-	const [connected, setConnected] = useState(false);
 	const [ws, setWs] = useState<WebSocket | null>();
 
 	const url = "ws://localhost:3030/websocket?auth=123";
-	const isBrowser = typeof window !== "undefined";
 
-	// // Call when updating the ws connection
-	// const updateWs = useCallback(
-	// 	(url: string) => {
-	// 		if (!isBrowser) return setWs(null);
+	const wsInit = () => {
+		let socket: WebSocket;
 
-	// 		// Close the old connection
-	// 		if (ws && ws?.readyState !== 3) ws.close();
+		// Close the old connection
+		if (ws && ws?.readyState !== 3) ws.close();
 
-	// 		// Create a new connection
-	// 		const newWs = new WebSocket(url);
-	// 		setWs(newWs);
-	// 	},
-	// 	[ws]
-	// );
+		socket = new WebSocket(url);
 
-	useEffect(() => {
-		let ws = new WebSocket(url);
-
-		ws.onopen = () => {
-			setWs(ws);
-			setConnected(true);
-			console.log("Connection opened");
+		socket.onopen = () => {
+			setWs(socket);
+			console.log("Connection opened: ", socket.readyState);
 		};
 
-		ws.onmessage = (message) => {
+		socket.onmessage = (message) => {
 			console.log("Received: ", message.data);
 			setResponse((arr) => [message.data, ...arr]);
 		};
 
+		socket.onerror = (ev) => {
+			console.log("Error in socket", ev);
+			socket.close();
+		};
+
+		socket.onclose = (e) => {
+			console.log("Closing connection: ", socket.readyState);
+			setTimeout(function () {
+				wsInit();
+			}, 1000);
+		};
+	};
+
+	useEffect(() => {
+		wsInit();
+
 		return () => {
 			// Cleanup on unmount if ws wasn't closed already
 			if (ws && ws?.readyState !== 3) ws.close();
-			setConnected(false);
 		};
 	}, []);
 
 	const sendMessage = () => {
-		if (connected) {
+		if (ws && ws.readyState === 1) {
 			ws && ws.send(message);
 			setMessage("");
+		} else {
+			alert("Server not connected");
 		}
 	};
 
@@ -57,7 +61,7 @@ const Home: NextPage = () => {
 		<div>
 			<h1>Go-Next Websocket</h1>
 
-			<h2>Connection state: {ws && ws.readyState}</h2>
+			<h2>Connection state: {ws ? ws.readyState : "0"}</h2>
 
 			<div className="parent">
 				<div>
@@ -72,8 +76,8 @@ const Home: NextPage = () => {
 				<div>
 					<h2>Message from server</h2>
 					<ul>
-						{response.map((resp) => (
-							<li>{resp}</li>
+						{response.map((resp, ind) => (
+							<li key={ind}>{resp}</li>
 						))}
 					</ul>
 				</div>
